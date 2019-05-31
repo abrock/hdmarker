@@ -123,7 +123,43 @@ public :
   
   void paint(cv::Mat &img);
   void paint_text(cv::Mat &paint);
+
+  /**
+   * @brief write Function needed for serializating a Corner using the OpenCV FileStorage system.
+   * @param fs
+   */
+  void write(cv::FileStorage& fs) const
+  {
+    fs << "{"
+       << "p" << p
+       << "pc0" << pc[0]
+       << "pc1" << pc[1]
+       << "pc2" << pc[2]
+       << "id" << id
+       << "page" << page
+       << "size" << size
+       << "}";
+  }
+
+  /**
+   * @brief read Method needed for reading a serialized Corner using the OpenCV FileStorage system.
+   * @param node
+   */
+  void read(const cv::FileNode& node)
+  {
+    node["p"] >> p;
+    node["pc0"] >> pc[0];
+    node["pc1"] >> pc[1];
+    node["pc2"] >> pc[2];
+    node["id"] >> id;
+    page = (int)node["page"];
+    size = (float)node["size"];
+  }
 };
+
+void write(cv::FileStorage& fs, const std::string&, const Corner& x);
+
+void read(const cv::FileNode& node, Corner& x, const Corner& default_value = Corner());
 
 
 

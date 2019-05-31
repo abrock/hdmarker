@@ -97,5 +97,10 @@ foreach(HEADER hdmarker gridstore subpattern)
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/${HEADER}.hpp DESTINATION "${CMAKE_INSTALL_PREFIX}/include/hdmarker")
 endforeach()
 
-
+find_package(GTest REQUIRED)
+add_executable(tests src/tests.cpp)
+target_link_libraries(tests
+  hdmarker
+  ${GTEST_BOTH_LIBRARIES}
+  )
 
