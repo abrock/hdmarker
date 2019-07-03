@@ -1057,7 +1057,7 @@ int hdmarker_subpattern_checkneighbours(Mat &img, const vector<Corner> corners, 
   }
   
   if (failed) {
-    throw runaway_subpattern(fail_cause);
+    //throw runaway_subpattern(fail_cause);
   }
   
   //FIXME push all corners from corners_out_map
@@ -1347,7 +1347,7 @@ int hdmarker_subpattern_checkneighbours_pers(Mat &img, const vector<Corner> corn
   }
   
   if (failed) {
-    throw runaway_subpattern(fail_cause);
+    //throw runaway_subpattern(fail_cause);
   }
   
   //FIXME push all corners from corners_out_map
@@ -1577,7 +1577,7 @@ void hdmarker_subpattern_step(Mat &img, vector<Corner> corners, vector<Corner> &
   }
   
   if (failed) {
-    throw runaway_subpattern(fail_cause);
+    //throw runaway_subpattern(fail_cause);
   }
   printf("\n");
   
