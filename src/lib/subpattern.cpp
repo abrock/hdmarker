@@ -185,15 +185,17 @@ public:
   Point2i id;
   Point2f p;
   float size;
-  bool used_as_start_corner = false;
   int dist_searched;
+  bool used_as_start_corner = false;
+  int8_t color = -1;
+  int16_t page = -1;
   
-  Interpolated_Corner() {};
+  Interpolated_Corner() {}
   Interpolated_Corner(Point2i id_, Point2f p_, bool used)
     : id(id_), p(p_), used_as_start_corner(used) {};
     
   Interpolated_Corner(Corner c)
-    : id(c.id), p(c.p), size(c.size) {};
+    : id(c.id), p(c.p), size(c.size), color(c.color), page(c.page) {}
 };
 
 static bool corner_cmp(Corner a, Corner b)
@@ -1068,6 +1070,7 @@ int hdmarker_subpattern_checkneighbours(
         Interpolated_Corner c_i(extr_id, refine_p, false);
         c_i.size = sqrt(norm(c.p-c_o.p)*norm(c.p-c_o.p) / (sy*sy + sx*sx))*2/idx_step;
         c_i.dist_searched = int_extend_range;
+        c_i.color = params[2] > params[4];
         
         if (paint) 
 #pragma omp critical (_paint_)
@@ -1129,6 +1132,7 @@ int hdmarker_subpattern_checkneighbours(
   for(auto it=corners_out_map.begin();it!=corners_out_map.end();++it) {
     Corner c_o(it->second.p, it->second.id, 0);
     c_o.size = it->second.size;
+    c_o.color = it->second.color;
     corners_out.push_back(c_o);
   }
   
@@ -1187,7 +1191,7 @@ int hdmarker_subpattern_checkneighbours_pers(
   IntCMap corners_map;
   IntCMap corners_out_map;
   
-  for(int i=0;i<corners.size();i++) {
+  for(size_t i=0;i<corners.size();i++) {
     Corner c = corners[i];
     Interpolated_Corner c_i(c);
     corners_map[id_to_key(corners[i].id)] = c_i;
@@ -1215,6 +1219,7 @@ int hdmarker_subpattern_checkneighbours_pers(
       for(int sx=-extend_range;sx<=extend_range;sx++) {
         
         Point2i extr_id = Point2i(c.id)-Point2i(sx,sy)*idx_step;
+        int16_t const current_page = c.page;
         
         if (!check_limits(extr_id, checkrange, limits))
           continue;
@@ -1348,6 +1353,8 @@ int hdmarker_subpattern_checkneighbours_pers(
         Interpolated_Corner c_i(extr_id, refine_p, false);
         c_i.size = size;//c_i.size = sqrt(norm(c.p-c_o.p)*norm(c.p-c_o.p) / (sy*sy + sx*sx))*2/idx_step;
         c_i.dist_searched = int_extend_range;
+        c_i.color = params[2] > params[4];
+        c_i.page = current_page;
         
         if (paint) 
 #pragma omp critical (_paint_)
@@ -1429,6 +1436,8 @@ int hdmarker_subpattern_checkneighbours_pers(
   for(auto it=corners_out_map.begin();it!=corners_out_map.end();++it) {
     Corner c_o(it->second.p, it->second.id, 0);
     c_o.size = it->second.size;
+    c_o.color = it->second.color;
+    c_o.page = it->second.page;
     corners_out.push_back(c_o);
   }
   added = static_cast<int>(corners.size()) - old_corners_size;
@@ -1577,7 +1586,7 @@ void hdmarker_subpattern_step(
         for(int y=0;y<5;y++)
           for(int x=0;x<5;x++) {
             Point2i target_id(c.id.x*out_idx_scale+2*x+out_idx_offset, c.id.y*out_idx_scale+2*y+out_idx_offset);
-            
+            int16_t const current_page = c.page;
             if (!check_limits(target_id, checkrange, limits))
               continue;
             
@@ -1658,6 +1667,8 @@ void hdmarker_subpattern_step(
             
             Corner c_o(refine_p, Point2i(c.id.x*out_idx_scale+2*x+out_idx_offset, c.id.y*out_idx_scale+2*y+out_idx_offset), 0);
             c_o.size = len*0.2;
+            c_o.color = params[2] > params[4];
+            c_o.page = current_page;
     #pragma omp critical
             {
               corners_out.push_back(c_o); 
@@ -1782,10 +1793,11 @@ void refine_recursive(
   for(int i=0;i<keep;i++)
     corners_out[i].id *= 10;
   corners_out.resize(keep+cb.size());
-  for(int i=0;i<cb.size();i++)
+  for(int i=0;i<cb.size();i++) {
+    cb[i].level = 1;
     corners_out[corners_out.size()-cb.size()+i] = cb[i];
-  
-  for(int i=2;i<=depth;i++) {
+  }
+  for(int level=2;level<=depth;level++) {
     ca = cb;
     cb.resize(0);
     
@@ -1810,9 +1822,10 @@ void refine_recursive(
     for(int i=0;i<keep;i++)
       corners_out[i].id *= 5;
     corners_out.resize(keep+cb.size());
-    for(int i=0;i<cb.size();i++)
+    for(int i=0;i<cb.size();i++) {
+      cb[i].level = level;
       corners_out[corners_out.size()-cb.size()+i] = cb[i];
-    
+    }
 //     printf("write debug!\n");
     //imwrite("debug.tif", *paint);
   }

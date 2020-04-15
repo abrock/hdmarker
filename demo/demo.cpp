@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <unordered_map>
+#include <map>
 
 using namespace std;
 using namespace cv;
@@ -89,7 +90,7 @@ bool calib_savepoints(vector<vector<Point2f> > all_img_points[4], vector<vector<
   }
   
   inliers.resize(world_points_check.size());
-  Mat hom = findHomography(world_points_check, img_points_check[0], CV_RANSAC, 100, inliers);
+  Mat hom = findHomography(world_points_check, img_points_check[0], cv::RANSAC, 100, inliers);
   
   vector<Point2f> proj;
   perspectiveTransform(world_points_check, proj, hom);
@@ -130,14 +131,14 @@ void calibrate_channel(vector<vector<Point2f> > &img_points, vector<vector<Point
   
   distCoeffs = Mat::zeros(1, 8, CV_64F);
   //use CV_CALIB_ZERO_TANGENT_DIST or we get problems when using single image!
-  rms = calibrateCamera(world_points, img_points, Size(w, h), cameraMatrix, distCoeffs, rvecs, tvecs, CV_CALIB_ZERO_TANGENT_DIST | CV_CALIB_RATIONAL_MODEL);
+  rms = calibrateCamera(world_points, img_points, Size(w, h), cameraMatrix, distCoeffs, rvecs, tvecs, cv::CALIB_ZERO_TANGENT_DIST | cv::CALIB_RATIONAL_MODEL);
   printf("rms %f with full distortion correction\n", rms);
     
   cout << distCoeffs << endl;
   
   projectPoints(world_points[0], rvecs[0], tvecs[0], cameraMatrix, distCoeffs, projected);
   if (img.channels() == 1)
-    cvtColor(img, paint, CV_GRAY2BGR);
+    cvtColor(img, paint, cv::COLOR_GRAY2BGR);
   else
     paint = img.clone();
   //resize(paint, paint, Size(Point2i(paint.size())*4), INTER_LINEAR);
@@ -209,8 +210,8 @@ void corrupt(Mat &img)
   randn(noise, 0, 3.0);
   img += noise;
   img.convertTo(img, CV_8U);
-  cvtColor(img, img, COLOR_BayerBG2BGR_VNG);
-  cvtColor(img, img, CV_BGR2GRAY);
+  cvtColor(img, img, cv::COLOR_BayerBG2BGR_VNG);
+  cvtColor(img, img, cv::COLOR_BGR2GRAY);
 }
 
 
@@ -246,7 +247,7 @@ int main(int argc, char* argv[])
     usage(argv[0]);
   
   if (demosaic) {
-    img = cv::imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
+    img = cv::imread(argv[1], cv::IMREAD_GRAYSCALE);
     cvtColor(img, img, COLOR_BayerBG2BGR);
     paint = img.clone();
   }
@@ -278,15 +279,15 @@ int main(int argc, char* argv[])
     sprintf(buf, "%d/%d", c.id.x, c.id.y);
     circle(paint, c.p, 1, Scalar(0,0,0,0), 2);
     circle(paint, c.p, 1, Scalar(0,255,0,0));
-    putText(paint, buf, c.p, FONT_HERSHEY_PLAIN, 0.5, Scalar(0,0,0,0), 2, CV_AA);
-    putText(paint, buf, c.p, FONT_HERSHEY_PLAIN, 0.5, Scalar(255,255,255,0), 1, CV_AA);
+    putText(paint, buf, c.p, FONT_HERSHEY_PLAIN, 0.5, Scalar(0,0,0,0), 2, cv::LINE_AA);
+    putText(paint, buf, c.p, FONT_HERSHEY_PLAIN, 0.5, Scalar(255,255,255,0), 1, cv::LINE_AA);
   }
   imwrite(argv[2], paint);
 
 //   
   Mat gray;
   if (img.channels() != 1)
-    cvtColor(img, gray, CV_BGR2GRAY);
+    cvtColor(img, gray, cv::COLOR_BGR2GRAY);
   else
     gray = img;
   
@@ -303,6 +304,35 @@ int main(int argc, char* argv[])
       circle(paint2, c.p, 3, Scalar(0,0,255,0), -1, LINE_AA);
     }
     imwrite(argv[3], paint2);
+  }
+
+  int markers_per_level[4] = {0,0,0,0};
+  std::map<int8_t, size_t> count_colors;
+  std::map<int16_t, size_t> count_pages;
+  std::map<std::string, size_t> count_colors2;
+  for (auto & it : corners_sub) {
+      std::cout << it.id << ", " << int(it.page) << ", col: " << int(it.color) << ", level: " << int(it.level) << std::endl;
+      markers_per_level[size_t(it.level)]++;
+      count_colors[it.color]++;
+      count_colors2[std::to_string(it.level) + "-" + std::to_string(it.color)]++;
+      count_pages[it.page]++;
+  }
+
+  std::cout << "Marker count per page:" << std::endl;
+  for (auto const& it : count_pages) {
+      std::cout << "page: " << it.first << ",\tcount: " << it.second << std::endl;
+  }
+  std::cout << "Marker count per level:" << std::endl;
+  for (size_t level = 0; level < 4; ++level) {
+      std::cout << "level: " << level << ",\tmarkers: " << markers_per_level[level] << std::endl;
+  }
+  std::cout << "Marker count per color:" << std::endl;
+  for (auto const& it : count_colors) {
+      std::cout << int(it.first) << ":\t" << it.second << std::endl;
+  }
+  std::cout << "Marker count per level and color:" << std::endl;
+  for (auto const& it : count_colors2) {
+      std::cout << it.first << ":\t" << it.second << std::endl;
   }
 
 //  microbench_measure_output("app finish");

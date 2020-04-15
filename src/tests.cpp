@@ -62,6 +62,12 @@ bool point2i_eq(cv::Point2i const& a, cv::Point2i const& b) {
     if (!float_eq(a.size, b.size)) {
         return ::testing::AssertionFailure() << "at size: " << a.size << "not equal to " << b.size;
     }
+    if (a.level != b.level) {
+        return ::testing::AssertionFailure() << "at level: " << a.level << " not equal to " << b.level;
+    }
+    if (a.color != b.color) {
+        return ::testing::AssertionFailure() << "at page: " << a.color << " not equal to " << b.color;
+    }
     return ::testing::AssertionSuccess();
 }
 
@@ -74,6 +80,8 @@ TEST(Corner, opencv_storage) {
     a.pc[2] = cv::Point2f(9,10);
     a.page = 11;
     a.size = 12;
+    a.level = 13;
+    a.color = 14;
     std::string const storage_file = "asdfghjk-test-temp-storage.yaml";
 
     {

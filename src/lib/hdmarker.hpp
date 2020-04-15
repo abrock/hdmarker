@@ -13,7 +13,7 @@
 #include <vector>
 #include <opencv2/core/core.hpp>
 
-#include "gridstore.hpp"
+#include <gridstore.hpp>
 
 namespace hdmarker {
 
@@ -79,8 +79,20 @@ class Corner {
 public :
   cv::Point2f p, pc[3];
   cv::Point2i id;
-  int page;
   float size;
+  int16_t page;
+  /**
+   * @brief level Recursion level where the marker was detected.
+   */
+  int8_t level = -1;
+  /**
+   * @brief color of the marker
+   * 0: black submarker.
+   * 1: white submarker.
+   * 2: main marker where the target is black at the top left and bottom right
+   * 3: main marker where the target is white at the top right and bottom left
+   */
+  int8_t color = -1;
   
   Corner()
   {
@@ -94,7 +106,7 @@ public :
     pc[1] = cp;
     pc[2] = cp;
     id = cid;
-    page = cpage;
+    page = int16_t(cpage);
   }
   
   Corner(Marker_Corner &c)
@@ -104,7 +116,7 @@ public :
     pc[1] = c.pc[1];
     pc[2] = c.pc[2];
     id = c.coord;
-    page = c.page;
+    page = int16_t(c.page);
     size = c.size;
   }
   
@@ -117,7 +129,8 @@ public :
     id = c.id;
     page = c.page;
     size = c.size;
-    
+    level = c.level;
+    color = c.color;
     return this;
   }
   
@@ -135,6 +148,8 @@ public :
          << "id" << id
          << "page" << page
          << "size" << size
+         << "color" << color
+         << "level" << level
          << "}";
   }
   void read(const cv::FileNode& node)                          //Read serialization for this class
@@ -144,8 +159,10 @@ public :
       node["pc1"] >> pc[1];
       node["pc2"] >> pc[2];
       node["id"] >> id;
-      page = (int)node["page"];
-      size = (float)node["size"];
+      page = int16_t(int(node["page"]));
+      level = int8_t(int(node["level"]));
+      color = int8_t(int(node["color"]));
+      size = float(node["size"]);
   }
 };
 

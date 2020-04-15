@@ -14,6 +14,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include(CMakeParseArguments)
 
+include_directories(/usr/local/include)
 
 #####################################################
 ## SET COMPILER ENVIRONMENT
@@ -69,8 +70,13 @@ vad_headers(hdmarker src/lib/hdmarker.hpp src/lib/gridstore.hpp src/lib/subpatte
 
 set(HDMARKER_LIBRARY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}hdmarker${CMAKE_SHARED_LIBRARY_SUFFIX} CACHE INTERNAL "" FORCE)
 
+find_package(ZLIB REQUIRED)
+
 add_executable(marker_gen src/bin/marker_gen.cpp)
-target_link_libraries(marker_gen hdmarker)
+target_link_libraries(marker_gen hdmarker podofo jpeg ${ZLIB_LIBRARIES}
+    fontconfig freetype idn crypto crypto ssl jpeg pthread freetype png z
+    tiff unistring
+    )
 
 find_package(GTest REQUIRED)
 add_executable(tests src/tests.cpp)
