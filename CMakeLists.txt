@@ -64,6 +64,14 @@ endif()
 
 include_directories(src/lib/)
 
+add_executable(scale-pyramid src/bin/scale-pyramid.cpp)
+vad_link(scale-pyramid ceres opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs opencv_calib3d)
+
+target_link_libraries(scale-pyramid PUBLIC
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
+    )
+
 add_library(hdmarker src/lib/hdmarker.cpp src/lib/gridstore.cpp src/lib/timebench.cpp src/lib/subpattern.cpp)
 vad_link(hdmarker ceres opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs opencv_calib3d)
 vad_headers(hdmarker src/lib/hdmarker.hpp src/lib/gridstore.hpp src/lib/subpattern.hpp)
