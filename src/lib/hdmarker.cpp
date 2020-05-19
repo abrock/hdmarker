@@ -4670,7 +4670,7 @@ void Marker::init(void)
   
   inits = 1;
   
-  setNumThreads(0);
+  setNumThreads(1);
   
   box_corners.resize(3);
   refine_corners.resize(3);

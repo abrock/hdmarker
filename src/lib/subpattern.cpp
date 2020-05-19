@@ -722,7 +722,7 @@ static double fit_gauss_direct(
   //options.preconditioner_type = ceres::IDENTITY;
   
   if (pcount >= 1000) {
-    options.num_threads = 8;
+    options.num_threads = 1;
   }
   
   ceres::Solver::Summary summary;
