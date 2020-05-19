@@ -1807,12 +1807,6 @@ void refine_recursive(
     hdmarker_subpattern_step(img , ca, cb, in_idx_step, 0.0, 5, 0, true, paint, mask_2x2, page, checkrange, scaled_limits, false, mul*5);
     //in_idx_step = 1;
     
-    
-    if (cb.size() <= ca.size()) {
-      //reset
-      cb = ca;
-      break;
-    }
     mul *= 5;
     
     keep = 0;
@@ -1826,7 +1820,12 @@ void refine_recursive(
       cb[i].level = level;
       corners_out[corners_out.size()-cb.size()+i] = cb[i];
     }
-//     printf("write debug!\n");
+    if (cb.size() <= ca.size()) {
+      //reset
+      cb = ca;
+      break;
+    }
+    //     printf("write debug!\n");
     //imwrite("debug.tif", *paint);
   }
     
