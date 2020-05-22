@@ -356,14 +356,14 @@ public:
         std::cout << "copySubmarker: " << counter << " markers at level " << level << std::endl;
     }
 
-    void enlargeWhiteSubmarkers(int const level, int const border) {
+    void enlargeSubmarkers(int const level, int const border, bool const black) {
         if (border < 1) {
             std::cout << "No white submarker enlargement" << std::endl;
             return;
         }
         size_t enlarged = 0;
         for (auto& it : markers) {
-            if (!it.black && it.level == level) {
+            if ((it.black == black) && it.level == level) {
                 it.x -= border;
                 it.y -= border;
                 it.width += 2*border;
@@ -371,7 +371,7 @@ public:
                 enlarged++;
             }
         }
-        std::cout << "Enlarged " << enlarged << " white submarkers" << std::endl;
+        std::cout << "Enlarged " << enlarged << " " << (black ? "black": "white") << " submarkers" << std::endl;
     }
 
     static int origPxPerMarker(int const recurs) {
@@ -491,7 +491,11 @@ public:
 
         scaleMarkers(scale);
 
-        enlargeWhiteSubmarkers(recursive, border);
+        enlargeSubmarkers(recursive, border, true);
+        enlargeSubmarkers(recursive, border, false);
+
+        enlargeSubmarkers(recursive-1, border*5, true);
+        enlargeSubmarkers(recursive-1, border*5, false);
 
         writeSVG(filename + ".svg");
 
