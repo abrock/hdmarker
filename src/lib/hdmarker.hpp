@@ -137,6 +137,8 @@ public :
   void paint(cv::Mat &img);
   void paint_text(cv::Mat &paint);
 
+  bool isEndangeredByScale() const;
+  static bool isEndangeredByScale(cv::Point id);
 
   void write(cv::FileStorage& fs) const                        //Write serialization for this class
   {

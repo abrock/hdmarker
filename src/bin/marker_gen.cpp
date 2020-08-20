@@ -11,6 +11,9 @@
 #include <time.h>
 #include <stdint.h>
 #include <fstream>
+#include "hdmarker.hpp"
+//#include "timebench.hpp"
+#include "subpattern.hpp"
 
 #include <podofo/podofo.h>
 
@@ -150,6 +153,8 @@ public:
     public:
         int level = 0;
         bool black = true;
+        bool endangered = false;
+        bool enlarged = false;
 
         SVGRect(int const x,
                 int const y,
@@ -349,25 +354,31 @@ public:
         for (int ii = 2; ii < scale*limit_height && ii < img.cols; ii += 5) {
             for (int jj = 2; jj < scale*limit_width && jj < img.rows; jj += 5) {
                 bool const black = img(ii, jj) == 0;
-                markers.push_back(SVGRect(jj, ii, 1, 1, level, black));
+                SVGRect rect(jj, ii, 1, 1, level, black);
+                if (2 == level) {
+                    cv::Point2i id((2*jj+1)/5, (2*ii+1)/5);
+                    rect.endangered = hdmarker::Corner::isEndangeredByScale(id);
+                }
+                markers.push_back(rect);
                 counter++;
             }
         }
         std::cout << "copySubmarker: " << counter << " markers at level " << level << std::endl;
     }
 
-    void enlargeWhiteSubmarkers(int const level, int const border) {
+    void enlargeSubmarkers(int const level, double const border, const bool black = false) {
         if (border < 1) {
             std::cout << "No white submarker enlargement" << std::endl;
             return;
         }
         size_t enlarged = 0;
         for (auto& it : markers) {
-            if (!it.black && it.level == level) {
+            if ((black == it.black) && it.level == level && border > 0) {
                 it.x -= border;
                 it.y -= border;
                 it.width += 2*border;
                 it.height += 2*border;
+                it.enlarged = true;
                 enlarged++;
             }
         }
@@ -440,7 +451,12 @@ public:
 
             painter.SetPage( page );
 
-            for (auto const& r : markers) {
+            size_t count_endangered = 0;
+            for (SVGRect const& r : markers) {
+                if (r.endangered && r.enlarged) {
+                    count_endangered++;
+                    continue;
+                }
                 if (r.black) {
                     painter.SetColor(0,0,0);
                 }
@@ -454,12 +470,12 @@ public:
                             pdf_units_per_dot * r.height);
                 painter.Fill();
                 counter[r.level]++;
-
             }
 
             for (size_t ii = 0; ii < 4; ++ii) {
                 std::cout << "Rectangles at level #" << ii << ": " << counter[ii] << std::endl;
             }
+            std::cout << "Endangered rectangles: " << count_endangered << std::endl;
 
             painter.FinishPage();
             document.Close();
@@ -491,7 +507,11 @@ public:
 
         scaleMarkers(scale);
 
-        enlargeWhiteSubmarkers(recursive, border);
+        enlargeSubmarkers(recursive, border, true);
+        enlargeSubmarkers(recursive, border, false);
+
+        enlargeSubmarkers(recursive-1, border*5, true);
+        enlargeSubmarkers(recursive-1, border*5, false);
 
         writeSVG(filename + ".svg");
 

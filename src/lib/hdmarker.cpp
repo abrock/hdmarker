@@ -1355,6 +1355,25 @@ void Corner::paint_text(Mat &img)
   putText(img, buf, p+Point2f(0,s.height+1), FONT_HERSHEY_PLAIN, 0.7, CV_RGB(0,0,0), 2);
   putText(img, buf, p+Point2f(0,s.height+1), FONT_HERSHEY_PLAIN, 0.7, CV_RGB(127,255,127), 1);
 }
+
+bool Corner::isEndangeredByScale() const {
+    if (level != 2) {
+        return false;
+    }
+    return isEndangeredByScale(id);
+}
+
+bool Corner::isEndangeredByScale(Point id) {
+    cv::Point _id(id.x % 10, id.y % 10);
+    return _id == cv::Point(3,3)
+            || _id == cv::Point(3,5)
+            || _id == cv::Point(3,7)
+            || _id == cv::Point(5,3)
+            || _id == cv::Point(5,7)
+            || _id == cv::Point(7,3)
+            || _id == cv::Point(7,5)
+            || _id == cv::Point(7,7);
+}
     
 double pattern_score(Mat patt)
 {

@@ -1257,6 +1257,9 @@ int hdmarker_subpattern_checkneighbours_pers(
             if (it == corners_map.end())
               continue;
             else {
+              if (it->second.id != search_id) {
+                  continue;
+              }
               assert(it->second.id == search_id);
               local_ids.push_back(it->second.id);
               local_points.push_back(it->second.p);
