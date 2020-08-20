@@ -53,7 +53,7 @@ if(DOXYGEN_FOUND)
         )
 endif()
 
-
+find_package(Boost COMPONENTS system filesystem REQUIRED)
 
 #####################################################
 ## COMPILE

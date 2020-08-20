@@ -6,7 +6,7 @@ add_executable(hdmarker-tool demo2.cpp)
 target_link_libraries(hdmarker-tool hdmarker)
 set_property(TARGET hdmarker-tool PROPERTY CXX_STANDARD 11)
 
-find_package(Boost COMPONENTS system filesystem iostreams REQUIRED)
+find_package(Boost COMPONENTS system filesystem REQUIRED)
 
 
 add_library(hdmarker-simple-calib-lib simplecalib.cpp)
