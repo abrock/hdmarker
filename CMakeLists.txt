@@ -1,13 +1,20 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(hdmarker)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 find_package(Boost COMPONENTS system filesystem iostreams REQUIRED)
 
-#####################################################
-## INITITIALIZE CMAKE ENVIRONMENT
-#####################################################
-#set(VAD_VERBOSE TRUE)
-include(cmake/vad.cmake)
+FIND_PACKAGE(OpenCV REQUIRED)
+INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
+
+FIND_PACKAGE(Eigen3 REQUIRED)
+INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIRS})
+
+find_package(Ceres REQUIRED)
+include_directories(${CERES_INCLUDE_DIRS})
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -22,9 +29,9 @@ include_directories(/usr/local/include)
 #####################################################
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   add_definitions(-DCOMPILER_CLANG_X86)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -mmmx")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmmx")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fno-omit-frame-pointer -fPIC -std=c++11 -march=native -fopenmp -mmmx")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fno-omit-frame-pointer -fPIC -march=native -fopenmp -mmmx")
   add_definitions(-DCOMPILER_GCC_X86)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /noOy /W2 /EHsc /openmp")
@@ -66,18 +73,27 @@ endif()
 include_directories(src/lib/)
 
 add_executable(scale-pyramid src/bin/scale-pyramid.cpp)
-vad_link(scale-pyramid ceres opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs opencv_calib3d)
+target_link_libraries(scale-pyramid PUBLIC
+    ceres opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs opencv_calib3d)
 
 target_link_libraries(scale-pyramid PUBLIC
+    ${OpenCV_LIBS}
+    ${CERES_LIBRARIES}
     ${Boost_FILESYSTEM_LIBRARY}
     ${Boost_SYSTEM_LIBRARY}
+    ${Boost_IOSTREAMS_LIBRARY}
     )
 
 add_library(hdmarker src/lib/hdmarker.cpp src/lib/gridstore.cpp src/lib/timebench.cpp src/lib/subpattern.cpp)
-vad_link(hdmarker ceres opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs opencv_calib3d)
-vad_headers(hdmarker src/lib/hdmarker.hpp src/lib/gridstore.hpp src/lib/subpattern.hpp)
 
-target_link_libraries(hdmarker PUBLIC gzstream)
+target_link_libraries(hdmarker PUBLIC
+    ${OpenCV_LIBS}
+    ${CERES_LIBRARIES}
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
+    ${Boost_IOSTREAMS_LIBRARY}
+    gzstream
+    )
 
 set(HDMARKER_LIBRARY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}hdmarker${CMAKE_SHARED_LIBRARY_SUFFIX} CACHE INTERNAL "" FORCE)
 
@@ -100,8 +116,6 @@ add_dependencies(hdmarker hdmarker-header-export)
 set(CONF_INCLUDE_DIRS ${CMAKE_BINARY_DIR}/include)
 export(TARGETS hdmarker FILE ${hdmarker_BINARY_DIR}/hdmarkerTargets.cmake)
 include(cmake/GenConfig.cmake)
-
-vad_auto_deps_show()
 
 #####################################################
 ## COMPILE DEMO
