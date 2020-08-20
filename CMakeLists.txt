@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(hdmarker)
 
+find_package(Boost COMPONENTS system filesystem iostreams REQUIRED)
 
 #####################################################
 ## INITITIALIZE CMAKE ENVIRONMENT

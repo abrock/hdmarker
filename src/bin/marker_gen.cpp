@@ -366,7 +366,7 @@ public:
         std::cout << "copySubmarker: " << counter << " markers at level " << level << std::endl;
     }
 
-    void enlargeSubmarkers(int const level, double const border, const bool black = false) {
+    void enlargeSubmarkers(int const level, int const border, bool const black) {
         if (border < 1) {
             std::cout << "No white submarker enlargement" << std::endl;
             return;
@@ -382,7 +382,7 @@ public:
                 enlarged++;
             }
         }
-        std::cout << "Enlarged " << enlarged << " white submarkers" << std::endl;
+        std::cout << "Enlarged " << enlarged << " " << (black ? "black": "white") << " submarkers" << std::endl;
     }
 
     static int origPxPerMarker(int const recurs) {
@@ -602,6 +602,12 @@ int main(int argc, char* argv[])
   else if (argc >= 8) {
       int w = atoi(argv[3]);
       int h = atoi(argv[4]);
+      if (w <= 0) {
+          std::cout << "width is " << w << " <= 0." << std::endl;
+      }
+      if (h <= 0) {
+          std::cout << "height is " << h << " <= 0." << std::endl;
+      }
       assert(w && h);
       Mat_<uint8_t> img(h*32*5, w*32*5, uint8_t(255));
       int limit_width = 32;
