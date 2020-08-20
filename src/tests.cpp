@@ -97,7 +97,7 @@ TEST(Corner, opencv_storage) {
 }
 
 TEST(Corner, opencv_storage_vec) {
-    std::vector<hdmarker::Corner> src(100);
+    std::vector<hdmarker::Corner> src(10*1000);
     std::vector<hdmarker::Corner> dst;
 
     for (size_t ii = 0; ii < src.size(); ++ii) {
@@ -123,6 +123,70 @@ TEST(Corner, opencv_storage_vec) {
         cv::FileStorage pointcache(storage_file, cv::FileStorage::READ);
         pointcache["vec"] >> dst;
     }
+    EXPECT_EQ(src.size(), dst.size());
+    for (size_t ii = 0; ii < src.size() && ii < dst.size(); ++ii) {
+        EXPECT_TRUE(CornersEqual(src[ii], dst[ii]));
+    }
+}
+
+TEST(Corner, binary_storage_vec) {
+    std::vector<hdmarker::Corner> src(10*1000);
+    std::vector<hdmarker::Corner> dst, dst_bin;
+
+    for (size_t ii = 0; ii < src.size(); ++ii) {
+        src[ii].p.x = dist(engine);
+        src[ii].p.y = dist(engine);
+        src[ii].pc[0] = {dist(engine), dist(engine)};
+        src[ii].pc[1] = {dist(engine), dist(engine)};
+        src[ii].pc[2] = {dist(engine), dist(engine)};
+        src[ii].page = dist(engine);
+        src[ii].size = dist(engine);
+        src[ii].level = dist(engine);
+        src[ii].color = dist(engine);
+    }
+
+    std::string const storage_file = "asdfghjk-test-temp-storage-vector.hdmarker";
+
+    std::stringstream out;
+    hdmarker::Corner::writeStream(out, src);
+    std::stringstream in(out.str());
+    hdmarker::Corner::readStream(in, dst);
+
+    EXPECT_EQ(src.size(), dst.size());
+    for (size_t ii = 0; ii < src.size() && ii < dst.size(); ++ii) {
+        EXPECT_TRUE(CornersEqual(src[ii], dst[ii]));
+    }
+
+    dst.clear();
+    hdmarker::Corner::writeFile(storage_file, src);
+    hdmarker::Corner::readFile(storage_file, dst);
+    EXPECT_EQ(src.size(), dst.size());
+    for (size_t ii = 0; ii < src.size() && ii < dst.size(); ++ii) {
+        EXPECT_TRUE(CornersEqual(src[ii], dst[ii]));
+    }
+}
+
+TEST(Corner, gzipped_binary_storage_vec) {
+    std::vector<hdmarker::Corner> src(10*1000);
+    std::vector<hdmarker::Corner> dst, dst_bin;
+
+    for (size_t ii = 0; ii < src.size(); ++ii) {
+        src[ii].p.x = dist(engine);
+        src[ii].p.y = dist(engine);
+        src[ii].pc[0] = {dist(engine), dist(engine)};
+        src[ii].pc[1] = {dist(engine), dist(engine)};
+        src[ii].pc[2] = {dist(engine), dist(engine)};
+        src[ii].page = dist(engine);
+        src[ii].size = dist(engine);
+        src[ii].level = dist(engine);
+        src[ii].color = dist(engine);
+    }
+
+    std::string const storage_file = "asdfghjk-test-temp-storage-vector.hdmarker.gz";
+
+    dst.clear();
+    hdmarker::Corner::writeFile(storage_file, src);
+    hdmarker::Corner::readFile(storage_file, dst);
     EXPECT_EQ(src.size(), dst.size());
     for (size_t ii = 0; ii < src.size() && ii < dst.size(); ++ii) {
         EXPECT_TRUE(CornersEqual(src[ii], dst[ii]));

@@ -13,6 +13,8 @@
 #include <vector>
 #include <opencv2/core/core.hpp>
 
+#include <xxh3.h>
+
 #include <gridstore.hpp>
 
 namespace hdmarker {
@@ -98,6 +100,8 @@ public :
   {
     page = -1;
   }
+
+  void clear();
   
   Corner(cv::Point2f cp, cv::Point2i cid, int cpage)
   {
@@ -166,11 +170,63 @@ public :
       color = int8_t(int(node["color"]));
       size = float(node["size"]);
   }
+
+  /**
+   * @brief xxhash computes a 64bit hash of all data stored by the object for integrity checks.
+   * @return
+   */
+  XXH64_hash_t xxhash() const;
+
+  /**
+   * @brief readFile reads Corner objects stored in a binary file. Each corner is checked for integrity using xxhash() and the total number of corners is checked.
+   * @param filename
+   * @param in_out
+   */
+  static void readFile(std::string const& filename, std::vector<Corner> & in_out);
+
+  /**
+   * @brief readGzipFile reads Corner objects stored in a gzipped binary file. Each corner is checked for integrity using xxhash() and the total number of corners is checked.
+   * @param filename
+   * @param in_out
+   */
+  static void readGzipFile(std::string const& filename, std::vector<Corner> & in_out);
+
+  /**
+   * @brief readFile reads Corner objects stored in a binary stream. Each corner is checked for integrity using xxhash() and the total number of corners is checked.
+   * @param in
+   * @param in_out
+   */
+  static void readStream(std::istream &in, std::vector<Corner> & in_out);
+
+  /**
+   * @brief writeFile stores a vector of Corner objects in a binary file.
+   * @param filename
+   * @param vec
+   */
+  static void writeFile(std::string const& filename, std::vector<Corner> const & vec);
+
+  /**
+   * @brief writeGzipFile stores a vector of Corner objects in a gzipped binary file.
+   * @param filename
+   * @param vec
+   */
+  static void writeGzipFile(std::string const& filename, std::vector<Corner> const & vec);
+
+  /**
+   * @brief writeStream stores a vector of Corner objects in a binary stream.
+   * @param out
+   * @param vec
+   * @return
+   */
+  static std::ostream& writeStream(std::ostream& out, std::vector<Corner> const & vec);
 };
 
 void write(cv::FileStorage& fs, const std::string&, const Corner& x);
 
 void read(const cv::FileNode& node, Corner& x, const Corner& default_value = Corner());
+
+std::ostream &operator <<(std::ostream &out, const Corner &m);
+std::istream &operator >>(std::istream &in, Corner &m);
 
 /**
 * @class Marker

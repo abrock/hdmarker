@@ -9,6 +9,7 @@
 #include <iostream>
 #include <assert.h>
 #include <stdio.h>
+#include <fstream>
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
@@ -18,6 +19,8 @@
 #include "timebench.hpp"
 #include "intrinsics.h"
 #include <x86intrin.h>
+
+#include <gzstream.h>
 
 #ifndef CV_RGB
 #define CV_RGB( r, g, b )  Scalar( (b), (g), (r), 0 )
@@ -1336,7 +1339,17 @@ void Marker_Corner::cornerSubPixCPMask( InputArray _image, Point2f &p,
     }
 
 
-void Corner::paint(Mat &img)
+    void Corner::clear()
+    {
+        level = -1;
+        color = -1;
+        page = -1;
+        size = -1;
+        id = {-1, -1};
+        p = pc[0] = pc[1] = pc[2] = {0,0};
+    }
+
+    void Corner::paint(Mat &img)
 {
   circle(img, p, 1, CV_RGB(0,0,0), 2);
   circle(img, p, 1, CV_RGB(255,255,255));
@@ -4758,6 +4771,124 @@ void read(const cv::FileNode& node, Corner& x, const Corner& default_value) {
   else {
     x.read(node);
   }
+}
+
+#define HASH(state64, val) {XXH3_64bits_update(&state64, reinterpret_cast<const char*>(&val), sizeof val);}
+XXH64_hash_t Corner::xxhash() const {
+    XXH3_state_t state64;
+    (void)XXH3_64bits_reset(&state64);
+    for (cv::Point2f const& x : {p, pc[0], pc[1], pc[2]}) {
+      HASH(state64, x.x);
+      HASH(state64, x.y);
+    }
+    HASH(state64, id.x);
+    HASH(state64, id.y);
+    HASH(state64, size);
+    HASH(state64, page);
+    HASH(state64, level);
+    HASH(state64, color);
+    return XXH3_64bits_digest(&state64);
+}
+
+#define WRITE_BIN(out, data) {out.write(reinterpret_cast<const char*>(&data), sizeof data);}
+ostream &operator <<(ostream &out, const Corner &m) {
+  for (cv::Point2f const& x : {m.p, m.pc[0], m.pc[1], m.pc[2]}) {
+    WRITE_BIN(out, x.x);
+    WRITE_BIN(out, x.y);
+  }
+  WRITE_BIN(out, m.id.x);
+  WRITE_BIN(out, m.id.y);
+  WRITE_BIN(out, m.size);
+  WRITE_BIN(out, m.page);
+  WRITE_BIN(out, m.level);
+  WRITE_BIN(out, m.color);
+
+  XXH64_hash_t hash = m.xxhash();
+  WRITE_BIN(out, hash);
+  return out;
+}
+
+ostream &Corner::writeStream(ostream &out, const std::vector<Corner> &vec) {
+  size_t const s = vec.size();
+  WRITE_BIN(out, s);
+  for (Corner const& c : vec) {
+    out << c;
+  }
+  return out;
+}
+
+void Corner::writeFile(const string &filename, const std::vector<Corner> &vec) {
+  if (filename.size() > 3) {
+    if (std::string(".gz") == filename.substr(filename.size()-3)) {
+      writeGzipFile(filename, vec);
+      return;
+    }
+  }
+  std::ofstream out(filename);
+  writeStream(out, vec);
+}
+
+void Corner::writeGzipFile(const string &filename, const std::vector<Corner> &vec) {
+    ogzstream out(filename.c_str());
+    writeStream(out, vec);
+}
+
+#define READ_BIN(in, data) {if (!in.read(reinterpret_cast<char*>(&data), sizeof data)) {m.clear(); return in;}}
+#define READ_PT(in, pt) {READ_BIN(in, pt.x); READ_BIN(in, pt.y);}
+istream &operator >>(istream &in, Corner &m) {
+  READ_PT(in, m.p);
+
+  READ_PT(in, m.pc[0]);
+  READ_PT(in, m.pc[1]);
+  READ_PT(in, m.pc[2]);
+
+  READ_BIN(in, m.id.x);
+  READ_BIN(in, m.id.y);
+  READ_BIN(in, m.size);
+  READ_BIN(in, m.page);
+  READ_BIN(in, m.level);
+  READ_BIN(in, m.color);
+
+  XXH64_hash_t hash_stored;
+  READ_BIN(in, hash_stored);
+  XXH64_hash_t hash_computed = m.xxhash();
+  if (hash_computed != hash_stored) {
+    m.clear();
+    throw std::runtime_error("Computed and stored hashes don't match.");
+  }
+  return in;
+}
+
+void Corner::readStream(istream &in, std::vector<Corner> &in_out) {
+  size_t const old_size = in_out.size();
+  size_t expected_stored_size = 0;
+  if (!in.read(reinterpret_cast<char*>(&expected_stored_size), sizeof expected_stored_size)) {
+    throw std::runtime_error("Corner::readFile could not read the number of hdmarker::Corners");
+  }
+  Corner c;
+  while (in >> c) {
+    in_out.push_back(c);
+  }
+  size_t const actual_stored_size = in_out.size() - old_size;
+  if (actual_stored_size != expected_stored_size) {
+    throw std::runtime_error(std::string("Expected ") + std::to_string(expected_stored_size) + " but got " + std::to_string(actual_stored_size) + " in Corner::readFile");
+  }
+}
+
+void Corner::readFile(std::string const &filename, std::vector<Corner> &in_out) {
+    if (filename.size() > 3) {
+        if (std::string(".gz") == filename.substr(filename.size()-3)) {
+            readGzipFile(filename, in_out);
+            return;
+        }
+    }
+    std::ifstream in(filename);
+    readStream(in, in_out);
+}
+
+void Corner::readGzipFile(const string &filename, std::vector<Corner> &in_out) {
+    igzstream in(filename.c_str());
+    readStream(in, in_out);
 }
 
 } //namespace hdmarker

@@ -77,6 +77,8 @@ add_library(hdmarker src/lib/hdmarker.cpp src/lib/gridstore.cpp src/lib/timebenc
 vad_link(hdmarker ceres opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs opencv_calib3d)
 vad_headers(hdmarker src/lib/hdmarker.hpp src/lib/gridstore.hpp src/lib/subpattern.hpp)
 
+target_link_libraries(hdmarker PUBLIC gzstream)
+
 set(HDMARKER_LIBRARY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}hdmarker${CMAKE_SHARED_LIBRARY_SUFFIX} CACHE INTERNAL "" FORCE)
 
 find_package(ZLIB REQUIRED)
